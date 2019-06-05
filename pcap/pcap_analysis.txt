@@ -1,0 +1,288 @@
+The file contains dumped data exchangeable between devices over a network.
+The structure of the file is a global header + packet #1 (header + data) + packet #2 (header + data) ...
+It might be useful to extract below info:
+- addresses of devices sending/receiving data
+- date/time of data exchange sessions
+- used protocols
+- payloads (size and byte sequence) - probably it depends on a concrete exchangeable data format. 
+
+how it might be useful when some device does not work properly? 
+1) find all packages related to the device, at least to make sure that the devices send/receive data
+2) according to device type and protocol, determine the exchange data format
+2) extract a payload from packages
+3) analyze the payload
+4) try to reproduce an issue locally to find out the cause
+
+
+######################################################################################
+
+File structure:
+Global Header || Packet Header 1 | Packet Data 1 || Packet Header 2 | Packet Data 2 || Packet Header 3 | Packet Data 3 ||...
+
+Global Header - 24bytes
+4 bytes: d4 c3 b2 a1 - magic number oxa1b2c3d4 means the endianness is correct, otherwise if the reading application reads the swapped 0xd4c3b2a1 value, it knows that all the following fields will have to be swapped too. 
+2 bytes: 02 00 - major number of the file format (2)
+2 bytes: 04 00 - minor number of the file format (4)
+4 bytes: 00 00 00 00 - correction time in seconds from UTC to local time (0)
+4 bytes: 00 00 00 00 - accuracy of time stamps in the capture (0)
+4 bytes: 00 00 00 01 - max length of captured packed (268435456)
+4 bytes: 01 00 00 00 - type of data link (1 = ethernet, more https://www.tcpdump.org/linktypes.html)
+
+=============================== Packet 1 ==========================================================================
+PCAP Packet Header -16 bytes
+4 bytes: 9e 6c 93 54 - timestamp seconds. the date and time when this packet was captured (Friday, December 19, 2014 12:09:02 AM)
+4 bytes: c2 19 01 00 - timestamp microseconds. the microseconds when this packet was captured. an offset to prev 4 bytes (1055170 msec)
+4 bytes: 4a 00 00 00 - the number of bytes of packet data actually captured and saved in the file (74 bytes)
+4 bytes: 4a 00 00 00 - actual length of packet
+
+--------Packet Data - 74 bytes ------------------------------------------------------------------------------------------
+
+Ethernet header: 14 bytes
+6 bytes: 00 10 db ff 10 01 - Destination MAC address
+6 bytes: e4 11 5b bb 30 36 - Source MAC address
+2 bytes: 08 00 - Ethernet Type (0x0800 – Ipv4)
+
+Ipv4 header: 20 bytes
+45 00 00 3c a3 68 40 00 40 
+06 - protocol (TCP)
+81 4f 
+0a 01 01 01 - source IP address (10.1.1.1)
+0a 01 01 02 - destination IP adress (10.1.1.2)
+
+Payload:
+cc 82 4e 20 c1 43 d6 81 00 00 00 00 a0 02 16 d0 c8 bc 00 00 02 04 05 b4 04 02 08 0a 2a 1d 75 e9 00 00 00 00 01 03 03 07
+
+=============================== Packet 2 ==========================================================================
+PCAP Packet Header -16 bytes
+a1 6c 93 54 -  Friday, December 19, 2014 12:09:05 AM
+d6 19 01 00 
+4a 00 00 00 - the number of bytes of packet data actually captured and saved in the file (74 bytes)
+4a 00 00 00 
+
+--------Packet Data - 74 bytes ------------------------------------------------------------------------------------------
+
+Ethernet header: 14 bytes
+00 10 db ff 10 01 
+e4 11 5b bb 30 36 
+08 00
+
+Ipv4 header: 20 bytes
+45 00 00 3c a3 69 40 00 40 
+06 - protocol (TCP)
+81 4e 
+0a 01 01 01 - source IP address (10.1.1.1)
+0a 01 01 02 - destination IP adress (10.1.1.2)
+
+Payload:
+cc 82 4e 20 c1 43 d6 81  00 00 00 00 a0 02 16 d0 bd 04 00 00 02 04 05 b4 04 02 08 0a 2a 1d 81 a1 00 00 00 00 01 03 03 07 
+
+=============================== Packet 3 ==========================================================================
+PCAP Packet Header -16 bytes
+a7 6c 93 54 
+83 1a 01 00 
+4a 00 00 00 - the number of bytes of packet data actually captured and saved in the file (74 bytes)
+4a 00 00 00 
+
+--------Packet Data - 74 bytes ------------------------------------------------------------------------------------------
+
+Ethernet header: 14 bytes
+00 10 db ff 10 01 
+e4 11 5b bb 30 36 
+08 00 
+
+Ipv4 header: 20 bytes
+45 00 00 3c a3 6a 40 00 40 
+06 - protocol (TCP)
+81 4d 
+0a 01 01 01 - source IP address (10.1.1.1)
+0a 01 01 02 - destination IP adress (10.1.1.2)
+
+Payload:
+cc 82 4e 20 c1 43 d6 81 00 00 00 00 a0 02 16 d0 a5 94 00 00 02 04 05 b4 04 02 08 0a 2a 1d 99 11 00 00 00 00 01 03 03 07 
+
+=============================== Packet 4 ==========================================================================
+PCAP Packet Header -16 bytes
+a7 6c 93 54 
+06 12 07 00 
+3e 00 00 00 - the number of bytes of packet data actually captured and saved in the file (62 bytes)
+3e 00 00 00 
+
+--------Packet Data - 62 bytes ------------------------------------------------------------------------------------------
+
+Ethernet header: 14 bytes
+e4 11 5b bb 30 36 
+00 10 db ff 10 01 
+81 00 - Ethernet type (IEEE Std 802.1Q more http://standards-oui.ieee.org/ethertype/eth.txt)
+
+Payload:
+02 47 08 00 45 00 00 2c 73 e5 00 00 3d 06 f3 e2 0a 01 01 02 
+0a 01 01 01 4e 20 cc 82 00 24 34 5b c1 43 d6 82 60 12 20 00 7b 29 00 00 02 04 05 b4 
+
+=============================== Packet 5 ==========================================================================
+PCAP Packet Header -16 bytes
+a7 6c 93 54 
+18 12 07 00 
+3c 00 00 00 - the number of bytes of packet data actually captured and saved in the file (60 bytes)
+3c 00 00 00 
+
+--------Packet Data - 60 bytes ------------------------------------------------------------------------------------------
+
+Ethernet header: 14 bytes
+00 10 db ff 10 01 
+e4 11 5b bb 30 36
+08 00 
+
+Ipv4 header: 20 bytes
+45 00 00 28 a3 6b 40 00 40 
+06 - protocol (TCP)
+81 60
+0a 01 01 01 - source IP address (10.1.1.1)
+0a 01 01 02 - destination IP adress (10.1.1.2)
+
+cc 82 4e 20 c1 43 d6 82 00 24 34 5c 50 10 16 d0 9c 16 00 00 00 00 00 00 00 00 
+
+=============================== Packet 6 ==========================================================================
+PCAP Packet Header -16 bytes
+aa 6c 93 54 
+5b 1a 07 00 
+4e 00 00 00 - the number of bytes of packet data actually captured and saved in the file (78 bytes)
+4e 00 00 00
+
+--------Packet Data - 78 bytes ------------------------------------------------------------------------------------------
+
+Ethernet header: 14 bytes
+00 10 db ff 10 01 
+e4 11 5b bb 30 36 
+08 00 
+
+45 00 00 40 a3 6c 40 00 40 06 81 47 0a 01 01 01 0a 01
+01 02 cc 82 4e 20 c1 43 d6 82 00 24 34 5c 50 18
+16 d0 8e 08 00 00 05 64 11 c4 ed 02 ef ff 3a eb
+c0 cf 15 3c 02 06 3c 03 06 3c 04 06 c0 80 aa 6c
+93 54 61 1e 0c 00 3c 00 00 00 3c 00 00 00 e4 11
+5b bb 30 36 
+
+00 10 db ff 10 01 81 00 02 47 08 00
+45 00 00 28 73 e6 00 00 3d 06 f3 e5 0a 01 01 02
+0a 01 01 01 4e 20 cc 82 00 24 34 5c c1 43 d6 9a
+50 10 20 00 92 ce 00 00 00 00 aa 6c 93 54 4f 8d
+0e 00 4b 00 00 00 4b 00 00 00 e4 11 5b bb 30 36
+00 10 db ff 10 01 81 00 02 47 08 00 45 00 00 39
+73 e7 00 00 3d 06 f3 d3 0a 01 01 02 0a 01 01 01
+4e 20 cc 82 00 24 34 5c c1 43 d6 9a 50 18 20 00
+45 d2 00 00 05 64 0a 44 ef ff ed 02 e4 0b c0 cf
+81 12 01 4a 39 aa 6c 93 54 60 8d 0e 00 3c 00 00
+00 3c 00 00 00 
+
+00 10 db ff 10 01 
+e4 11 5b bb 30 36 
+08 00 
+
+45 00 00 28 a3 6d 40 00 40 06 81 5e 0a
+01 01 01 0a 01 01 02 cc 82 4e 20 c1 43 d6 9a 00
+24 34 6d 50 10 16 d0 9b ed 00 00 00 00 00 00 00
+00 aa 6c 93 54 3c 90 0e 00 45 00 00 00 45 00 00
+00 
+
+00 10 db ff 10 01 
+e4 11 5b bb 30 36 
+08 00 
+45 00 00 37 a3 6e 40 00 40 06 81 4e 0a 01 01 01 0a
+01 01 02 cc 82 4e 20 c1 43 d6 9a 00 24 34 6d 50
+18 16 d0 3b 5c 00 00 05 64 08 c4 ed 02 ef ff c0
+bc c0 c0 18 d1 db ab 6c 93 54 5a 7e 05 00 4b 00
+00 00 4b 00 00 00 e4 11 5b bb 30 36 00 10 db ff
+10 01 81 00 02 47 08 00 45 00 00 39 73 e9 00 00
+3d 06 f3 d1 0a 01 01 02 0a 01 01 01 4e 20 cc 82
+00 24 34 6d c1 43 d6 a9 50 18 20 00 64 fc 00 00
+05 64 0a 44 ef ff ed 02 e4 0b c0 c0 81 12 01 0f
+1a ab 6c 93 54 87 7e 05 00 4f 00 00 00 4f 00 00
+00 
+
+00 10 db ff 10 01 
+e4 11 5b bb 30 36 
+08 00 
+45 00 00 41 a3 6f 40 00 40 06 81 43 0a 01 01 01 0a
+01 01 02 cc 82 4e 20 c1 43 d6 a9 00 24 34 7e 50
+18 16 d0 0e d5 00 00 05 64 12 c4 ed 02 ef ff 6a
+78 c0 c1 02 32 03 07 01 cd 7b e0 5f 4a 01 41 89
+ab 6c 93 54 51 d9 09 00 4b 00 00 00 4b 00 00 00
+e4 11 5b bb 30 36 00 10 db ff 10 01 81 00 02 47
+08 00 45 00 00 39 73 eb 00 00 3d 06 f3 cf 0a 01
+01 02 0a 01 01 01 4e 20 cc 82 00 24 34 7e c1 43
+d6 c2 50 18 20 00 fb da 00 00 05 64 0a 44 ef ff
+ed 02 e4 0b c0 c1 81 12 02 05 82 ab 6c 93 54 b7
+79 0a 00 3c 00 00 00 3c 00 00 00 00 10 db ff 10
+01 e4 11 5b bb 30 36 08 00 45 00 00 28 a3 70 40
+00 40 06 81 5b 0a 01 01 01 0a 01 01 02 cc 82 4e
+20 c1 43 d6 c2 00 24 34 8f 50 10 16 d0 9b a3 00
+00 00 00 00 00 00 00 ad 6c 93 54 85 22 07 00 51
+00 00 00 51 00 00 00 
+
+00 10 db ff 10 01 
+e4 11 5b bb 30 36 
+08 00 
+
+45 00 00 43 a3 71 40 00 40 06 81
+3f 0a 01 01 01 0a 01 01 02 cc 82 4e 20 c1 43 d6
+c2 00 24 34 8f 50 18 16 d0 78 8c 00 00 05 64 14
+c4 ed 02 ef ff b3 13 c0 c2 01 3c 02 06 3c 03 06
+3c 04 06 3c 01 06 6a 2c ad 6c 93 54 13 d3 0b 00
+3c 00 00 00 3c 00 00 00 e4 11 5b bb 30 36 00 10
+db ff 10 01 81 00 02 47 08 00 45 00 00 28 73 ee
+00 00 3d 06 f3 dd 0a 01 01 02 0a 01 01 01 4e 20
+cc 82 00 24 34 8f c1 43 d6 dd 50 10 20 00 92 58
+00 00 00 00 af 6c 93 54 a6 64 03 00 08 01 00 00
+08 01 00 00 e4 11 5b bb 30 36 00 10 db ff 10 01
+81 00 02 47 08 00 45 00 00 f6 73 f1 00 00 3d 06
+f3 0c 0a 01 01 02 0a 01 01 01 4e 20 cc 82 00 24
+34 8f c1 43 d6 dd 50 18 20 00 25 df 00 00 05 64
+b3 44 ef ff ed 02 1f bc c0 e2 81 10 00 02 02 17
+02 18 81 c8 04 d8 5f 4a a6 49 01 18 01 c4 33 da
+5f 4a 01 01 01 00 00 2c 3a 06 26 f3 00 00 00 04
+0a 02 00 00 0b 01 01 01 01 01 01 01 8a ba 01 01
+01 01 01 1e 04 00 00 27 66 0e 00 00 00 00 54 dd
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ff ff 00 00 00 00 00 00 ba 02 bb 02 b7 02 00 00
+00 00 20 16 00 00 00 00 00 00 00 00 00 00 00 00
+00 00 00 00 ff ff 00 00 00 00 00 00 00 00 00 00
+58 00 ce 02 00 00 f0 6b 00 00 00 00 00 00 00 00
+00 00 28 02 00 00 02 01 16 ff 4a 00 01 03 00 01
+4a 00 14 06 00 00 02 29 00 1d 56 b2 00 00 00 15
+0a 00 00 02 00 00 00 00 00 00 d6 1a af 6c 93 54
+b8 64 03 00 3c 00 00 00 3c 00 00 00 00 10 db ff
+10 01 e4 11 5b bb 30 36 08 00 45 00 00 28 a3 72
+40 00 40 06 81 59 0a 01 01 01 0a 01 01 02 cc 82
+4e 20 c1 43 d6 dd 00 24 35 5d 50 10 19 20 98 6a
+00 00 00 00 00 00 00 00 af 6c 93 54 0d 65 03 00
+45 00 00 00 45 00 00 00 
+
+00 10 db ff 10 01 
+e4 11 5b bb 30 36 
+08 00 
+
+45 00 00 37 a3 73 40 00 40 06
+81 49 0a 01 01 01 0a 01 01 02 cc 82 4e 20 c1 43
+d6 dd 00 24 35 5d 50 18 19 20 9d d2 00 00 05 64
+08 c4 ed 02 ef ff c0 bc c0 c2 00 d6 8d af 6c 93
+54 e0 c5 0b 00 3c 00 00 00 3c 00 00 00 e4 11 5b
+bb 30 36 00 10 db ff 10 01 81 00 02 47 08 00 45
+00 00 28 73 f3 00 00 3d 06 f3 d8 0a 01 01 02 0a
+01 01 01 4e 20 cc 82 00 24 35 5d c1 43 d6 ec 50
+10 20 00 91 7b 00 00 00 00 af 6c 93 54 f9 c5 0b
+00 45 00 00 00 45 00 00 00 
+
+00 10 db ff 10 01 
+e4 11 5b bb 30 36 
+08 00 
+
+45 00 00 37 a3 74 40 00 40
+06 81 48 0a 01 01 01 0a 01 01 02 cc 82 4e 20 c1
+43 d6 ec 00 24 35 5d 50 18 19 20 a8 1e 00 00 05
+64 08 c4 ed 02 ef ff c0 bc c0 c3 18 7a 6b b0 6c
+93 54 1d ed 02 00 4b 00 00 00 4b 00 00 00 e4 11
+5b bb 30 36 00 10 db ff 10 01 81 00 02 47 08 00
+45 00 00 39 73 f4 00 00 3d 06 f3 c6 0a 01 01 02
+0a 01 01 01 4e 20 cc 82 00 24 35 5d c1 43 d6 fb
+50 18 20 00 72 1d 00 00 05 64 0a 44 ef ff ed 02
+e4 0b c0 c3 81 10 01 ab 0b
