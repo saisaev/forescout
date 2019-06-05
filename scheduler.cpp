@@ -11,6 +11,7 @@ bool operator<=(struct timeval t0, struct timeval t1)
 void scheduler::OnNewTime(const timeval& timestamp)
 {
 	std::lock_guard<std::mutex> lock(m_jobslocker);
+	m_current_time = timestamp;
 	std::for_each(m_jobs.begin(), m_jobs.end(),
 		[this, &timestamp](job_n_context& ref_pair) 
 		{ 
